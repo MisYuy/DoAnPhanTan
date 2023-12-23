@@ -17,7 +17,12 @@ document.querySelector('main').style.display = "none";
 document.getElementById('customStyle').href = "authenticate.css";
 
 let username = "";
+let curNameRoomJoined = "";
 let curNameRoomSelecting = "";
+let curElementRoomSelecting;
+
+
+//#region ---------- FUNCTION HANDLE LOGIC ----------
 
 function login(e) {
     e.preventDefault();
@@ -31,7 +36,10 @@ function login(e) {
 function createRoom(e){
     e.preventDefault();
     const nameRoom = document.getElementById('roomName').value;
-    socket.emit('createRoom', {nameRoom, username: username});
+    const password = document.getElementById('roomPassword').value;
+    const title = document.getElementById('roomTitle').value;
+    socket.emit('createRoom', {nameRoom, username: username, password, title: title});
+    document.getElementById('createRoomForm').reset();
 }
 
 function sendMessage(e) {
@@ -41,18 +49,31 @@ function sendMessage(e) {
         socket.emit('message', {
             sender: username,
             text: msgInput.value,
-            nameRoom: curNameRoomSelecting
+            nameRoom: curNameRoomJoined
         });
         msgInput.value = '';
     }
     msgInput.focus();
 }
 
-function enterRoom(element) {
-    const nameRoom = element.getAttribute("name-room");
-    console.log("Join Room " + nameRoom + " success");
-    socket.emit('joinRoom', {nameRoom: nameRoom, username: username});
+function selectRoom(element){
+    const nameRoom = element.getAttribute('name-room');
+    socket.emit('selectRoom', {nameRoom: nameRoom, username: username});
+    curNameRoomSelecting = nameRoom;
+    if(curElementRoomSelecting) curElementRoomSelecting.className = "read";
+    curElementRoomSelecting = element;
+    curElementRoomSelecting.className = "active";
 }
+
+function joinRoom(e) {
+    if(e) e.preventDefault();
+    document.getElementById('joinRoomForm').reset();
+    socket.emit('joinRoom', {nameRoom: curNameRoomSelecting, username: username});
+}
+
+//#endregion
+
+//#region ---------- RESPONSE FROM SERVER ----------
 
 socket.on("loginResult", ({result, user}) => {
     if(result === true){
@@ -67,32 +88,6 @@ socket.on("loginResult", ({result, user}) => {
     }
 });
 
-// Listen for messages 
-socket.on("message", (data) => {
-    activity.textContent = "";
-    const { name, text, time } = data;
-    const li = document.createElement('li');
-    li.className = 'post';
-    if (name === nameInput.value) li.className = 'post post--left';
-    if (name !== nameInput.value && name !== 'Admin') li.className = 'post post--right';
-    if (name !== 'Admin') {
-        li.innerHTML = `<div class="post__header ${name === nameInput.value
-            ? 'post__header--user'
-            : 'post__header--reply'
-            }">
-        <span class="post__header--name">${name}</span> 
-        <span class="post__header--time">${time}</span> 
-        </div>
-        <div class="post__text">${text}</div>`;
-    } else {
-        li.innerHTML = `<div class="post__text">${text}</div>`;
-    }
-    document.querySelector('.chat-display').appendChild(li);
-
-    chatDisplay.scrollTop = chatDisplay.scrollHeight;
-});
-
-
 socket.on('userList', ({ users }) => {
     showUsers(users);
 });
@@ -101,15 +96,28 @@ socket.on('roomList', ({ rooms }) => {
     showRooms(rooms);
 });
 
-socket.on('rsSelectRoom', ({ room }) => {
-    curNameRoomSelecting = room;
+
+socket.on('rsSelectRoom', ({ check }) => {
+    if(check !== true){
+        openJoinRoomPopup();
+    }
+    else{
+        joinRoom(null);
+    }
+});
+
+socket.on('rsJoinRoom', ({ room }) => {
+    curNameRoomJoined = room.NameRoom;
     openRoom(room);
 });
 
 socket.on('messagesList', ({ messages }) => {
-    console.log("Display Messages: "  + messages.length + "length");
     showMess(messages);
 });
+
+//#endregion 
+
+//#region ---------- UI HANDLE ----------
 
 function showUsers(users) {
     usersList.textContent = '';
@@ -128,17 +136,18 @@ function showRooms(rooms) {
     roomList.innerHTML = "";
     if (rooms) {
         rooms.forEach(room => {
-            roomList.innerHTML += `<li class="active" name-room="${room}" onclick="enterRoom(this)">
+            console.log(`${room.NameRoom} + ${room.isJoined}`);
+            roomList.innerHTML += `<li class="read" name-room="${room.NameRoom}" onclick="selectRoom(this)">
             <a>
                 <div class="messenger-icon">
                     <img src="images/Logo.png">
                     <i class="fa fa-circle green"></i>
                 </div>
                 <div class="messenger-message">
-                    <h5 class="message-title">${room}</h5>
-                    <div class="message-summery choppOff">Design all task given by Ashwini on top priority.</div>
+                    <h5 class="message-title">${room.NameRoom}</h5>
+                    <div class="message-summery choppOff">${room.Title}</div>
                 </div>
-                <span class="date-time">14 min ago</span>
+                <span class="date-time">${room.isJoined ? 'Đã tham gia' : 'Chưa tham gia'}</span>
             </a>
         </li>`;
         });
@@ -146,7 +155,8 @@ function showRooms(rooms) {
 }
 
 function openRoom(room){
-    nameRoom.textContent = room;
+    nameRoom.textContent = room.NameRoom;
+    document.querySelector('#title-room').textContent = room.Title;
 }
 
 function showMess(messages){
@@ -192,4 +202,12 @@ function showMess(messages){
             }
         })
     }
+    chatter.scrollTop = chatter.scrollHeight;
 }
+
+function openJoinRoomPopup(element) {
+    document.getElementById('joinRoomPopup').style.display = 'block';
+}
+
+//#endregion
+

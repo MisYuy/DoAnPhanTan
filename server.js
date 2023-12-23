@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 
 // Assuming that database.js is in the same directory as server.mjs
-import { loginMethod, insertMess, getAllMessOfRoom } from './database.js';
+import { loginMethod, checkJoinRoom, createRoom, joinRoom, getAllRooms, getRoomByName, insertMess, getAllMessOfRoom } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -43,48 +43,6 @@ const io = new Server(expressServer, {
 io.on('connection', socket => {
     console.log(`User ${socket.id} connected`);
 
-    // Upon connection - only to user 
-    socket.emit('message', buildMsg(ADMIN, "Welcome to Chat App!"));
-
-    socket.on('enterRoom', ({ name, room }) => {
-
-        // leave previous room 
-        const prevRoom = getUser(socket.id)?.room;
-
-        if (prevRoom) {
-            socket.leave(prevRoom);
-            io.to(prevRoom).emit('message', buildMsg(ADMIN, `${name} has left the room`));
-        }
-
-        const user = activateUser(socket.id, name, room);
-
-        // Cannot update previous room users list until after the state update in activate user 
-        if (prevRoom) {
-            io.to(prevRoom).emit('userList', {
-                users: getUsersInRoom(prevRoom)
-            });
-        }
-
-        // join room 
-        socket.join(user.room);
-
-        // To user who joined 
-        socket.emit('message', buildMsg(ADMIN, `You have joined the ${user.room} chat room`));
-
-        // To everyone else 
-        socket.broadcast.to(user.room).emit('message', buildMsg(ADMIN, `${user.name} has joined the room`));
-
-        // Update user list for the room 
-        io.to(user.room).emit('userList', {
-            users: getUsersInRoom(user.room)
-        });
-
-        // Update rooms list for everyone 
-        io.emit('roomList', {
-            rooms: getAllActiveRooms()
-        });
-    });
-
     // When user disconnects - to all others 
     socket.on('disconnect', () => {
         const user = getUser(socket.id);
@@ -110,8 +68,12 @@ io.on('connection', socket => {
             const user = await loginMethod(username, password);
             const result = user !== undefined;
             socket.emit("loginResult", {result, user});
+            let rooms = await getAllRooms();
+            for (let room of rooms) {
+                room.isJoined = (await checkJoinRoom(room.NameRoom, username)) !== undefined;
+            }
             socket.emit('roomList', {
-                rooms: getAllActiveRooms()
+                rooms: rooms
             });
         } catch (error) {
             console.error('Error during login:', error);
@@ -119,13 +81,33 @@ io.on('connection', socket => {
         }
     });
 
-    socket.on('createRoom', async ({nameRoom, username}) => {
+    socket.on('selectRoom', async ({ nameRoom, username }) => {
+        try {
+            const result = await checkJoinRoom(nameRoom, username);
+            const check = result !== undefined;
+            socket.emit("rsSelectRoom", {check});
+        } catch (error) {
+            console.error('Error during login:', error);
+            socket.emit("rsSelectRoom", {check});
+        }
+    });
+
+
+    socket.on('createRoom', async ({nameRoom, username, password, title}) => {
         try {
             const user = activateUser(socket.id, username, nameRoom);
             // join room 
             socket.join(user.room);
-            io.emit("roomList", {rooms: getAllActiveRooms()});
-            socket.emit("rsSelectRoom", {room: nameRoom});
+            const myRoom = await createRoom(nameRoom, password, title);
+            await joinRoom(nameRoom, username);
+            let rooms = await getAllRooms();
+            for (let room of rooms) {
+                room.isJoined = (await checkJoinRoom(room.NameRoom, username)) !== undefined;
+            }
+            socket.emit('roomList', {
+                rooms: rooms
+            });
+            socket.emit("rsJoinRoom", {room: myRoom});
             const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
             await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             const allMessInRoom = await getAllMessOfRoom(nameRoom);
@@ -140,7 +122,10 @@ io.on('connection', socket => {
             const user = activateUser(socket.id, username, nameRoom);
             // join room 
             socket.join(user.room);
-            socket.emit("rsSelectRoom", {room: nameRoom});
+            const checkJoinedRoom = await checkJoinRoom(nameRoom, username);
+            if(checkJoinedRoom === undefined) await joinRoom(nameRoom, username);
+            const room = await getRoomByName(nameRoom);
+            socket.emit("rsJoinRoom", {room: room});
             const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
             await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             const allMessInRoom = await getAllMessOfRoom(nameRoom);

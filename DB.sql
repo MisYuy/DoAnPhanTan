@@ -1,6 +1,6 @@
 USE [master]
 GO
-/****** Object:  Database [ChatApp]    Script Date: 12/19/2023 7:16:10 PM ******/
+/****** Object:  Database [ChatApp]    Script Date: 12/23/2023 10:52:16 PM ******/
 CREATE DATABASE [ChatApp]
  CONTAINMENT = NONE
  ON  PRIMARY 
@@ -84,19 +84,48 @@ ALTER DATABASE [ChatApp] SET QUERY_STORE (OPERATION_MODE = READ_WRITE, CLEANUP_P
 GO
 USE [ChatApp]
 GO
-/****** Object:  Table [dbo].[TaiKhoan]    Script Date: 12/19/2023 7:16:11 PM ******/
+/****** Object:  Table [dbo].[PhongChat]    Script Date: 12/23/2023 10:52:16 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[PhongChat](
+	[NameRoom] [nvarchar](50) NOT NULL,
+	[Password] [nvarchar](50) NOT NULL,
+	[Title] [nvarchar](500) NOT NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[TaiKhoan]    Script Date: 12/23/2023 10:52:16 PM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[TaiKhoan](
-	[ID] [nvarchar](10) NOT NULL,
 	[Username] [nvarchar](50) NOT NULL,
-	[Password] [nvarchar](50) NOT NULL,
- CONSTRAINT [PK_TaiKhoan] PRIMARY KEY CLUSTERED 
-(
-	[ID] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+	[Password] [nvarchar](50) NOT NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[ThamGia]    Script Date: 12/23/2023 10:52:16 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ThamGia](
+	[NameRoom] [nvarchar](50) NOT NULL,
+	[Username] [nvarchar](50) NOT NULL
+) ON [PRIMARY]
+GO
+/****** Object:  Table [dbo].[TinNhan]    Script Date: 12/23/2023 10:52:16 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[TinNhan](
+	[NameRoom] [nvarchar](50) NOT NULL,
+	[Sender] [nvarchar](50) NOT NULL,
+	[ContentChat] [nvarchar](1000) NOT NULL,
+	[Time] [nvarchar](50) NOT NULL,
+	[Type] [nvarchar](50) NOT NULL
 ) ON [PRIMARY]
 GO
 USE [master]
