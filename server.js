@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 
 // Assuming that database.js is in the same directory as server.mjs
-import { loginMethod } from './database.js';
+import { loginMethod, insertMess, getAllMessOfRoom } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,6 +26,12 @@ const UsersState = {
     setUsers: function (newUsersArray) {
         this.users = newUsersArray;
     }
+};
+
+const TYPE_MESS = {
+    NORMAL: "Normal",
+    IN: "In",
+    OUT: "Out"
 };
 
 const io = new Server(expressServer, {
@@ -102,21 +108,57 @@ io.on('connection', socket => {
     socket.on('login', async ({ username, password }) => {
         try {
             const user = await loginMethod(username, password);
-            console.log("User "+ user);
             const result = user !== undefined;
-            console.log(socket.id + "   " + result);
-            socket.emit("loginResult", {result});
+            socket.emit("loginResult", {result, user});
+            socket.emit('roomList', {
+                rooms: getAllActiveRooms()
+            });
         } catch (error) {
             console.error('Error during login:', error);
             socket.emit("loginResult", {result});
         }
     });
 
+    socket.on('createRoom', async ({nameRoom, username}) => {
+        try {
+            const user = activateUser(socket.id, username, nameRoom);
+            // join room 
+            socket.join(user.room);
+            io.emit("roomList", {rooms: getAllActiveRooms()});
+            socket.emit("rsSelectRoom", {room: nameRoom});
+            const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
+            await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
+            const allMessInRoom = await getAllMessOfRoom(nameRoom);
+            socket.emit("messagesList", {messages: allMessInRoom});
+        } catch (error) {
+            console.error('Error create room:', error);
+        }
+    });
+
+    socket.on('joinRoom', async ({nameRoom, username}) => {
+        try {
+            const user = activateUser(socket.id, username, nameRoom);
+            // join room 
+            socket.join(user.room);
+            socket.emit("rsSelectRoom", {room: nameRoom});
+            const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
+            await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
+            const allMessInRoom = await getAllMessOfRoom(nameRoom);
+            io.to(nameRoom).emit("messagesList", {messages: allMessInRoom});
+        } catch (error) {
+            console.error('Error create room:', error);
+        }
+    });
+
     // Listening for a message event 
-    socket.on('message', ({ name, text }) => {
-        const room = getUser(socket.id)?.room;
-        if (room) {
-            io.to(room).emit('message', buildMsg(name, text));
+    socket.on('message', async ({ sender, text, nameRoom }) => {
+        try {
+            const mess = buildMsg(sender, text, TYPE_MESS.NORMAL);
+            await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
+            const allMessInRoom = await getAllMessOfRoom(nameRoom);
+            io.to(nameRoom).emit("messagesList", {messages: allMessInRoom});
+        } catch (error) {
+            console.error('Error send message:', error);
         }
     });
 
@@ -129,15 +171,19 @@ io.on('connection', socket => {
     });
 });
 
-function buildMsg(name, text) {
+function buildMsg(name, text, type) {
     return {
         name,
         text,
         time: new Intl.DateTimeFormat('default', {
-            hour: 'numeric',
-            minute: 'numeric',
-            second: 'numeric'
-        }).format(new Date())
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        }).format(new Date()),
+        type
     };
 }
 

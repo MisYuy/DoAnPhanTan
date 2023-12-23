@@ -5,11 +5,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Chat App</title>
-    <link href="style.css" rel="stylesheet" id="customStyle">
+    <link href="authenticate.css" rel="stylesheet" id="customStyle">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"
         integrity="sha512-Xm9qbB6Pu06k3PUwPj785dyTl6oHxgsv9nHp7ej7nCpAqGZT3OZpsELuCYX05DdonFpTlBpXMOxjavIAIUwr0w=="
         crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script defer src="client.js"></script>
+
+    <link rel="stylesheet/less" href="less/bootstrap.less" type="text/css"/>
+    <link rel="stylesheet/less" href="less/inbox.less" type="text/css" />
+    <link rel="stylesheet/less" href="less/jquery.mCustomScrollbar.less" type="text/css" />
+    <link rel="stylesheet/less" href="font/font-awesome.less" type="text/css"/>
+	<link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,900" rel="stylesheet">
+    <script src="js/less.min.js"></script>
+
 </head>
 
 <body>
@@ -32,7 +40,7 @@
                             <input id="check" type="checkbox" class="check" checked>
                             <label for="check"><span class="icon"></span> Keep me Signed in</label>
                         </div>
-                        <div id="concac" class="loginResult"></div>
+                        <div id="loginResult" class="loginResult"></div>
                         <div class="group">
                             <input type="submit" class="button" value="Sign In">
                         </div>
@@ -71,25 +79,123 @@
         </div>
     </div>
     <main>
-        <form class="form-join">
-            <input type="text" id="name" maxlength="8" placeholder="Your name" size="5" required>
-            <input type="text" id="room" placeholder="Chat room" size="5" required>
-            <button id="join" type="submit">Join</button>
-        </form>
-
-        <ul class="chat-display"></ul>
-
-        <p class="user-list"></p>
-
-        <p class="room-list"></p>
-
-        <p class="activity"></p>
-
-        <form class="form-msg">
-            <input type="text" id="message" placeholder="Your message" required>
-            <button type="submit">Send</button>
-        </form>
+        <div class="Hide">
+            <form class="form-join">
+                <input type="text" id="name" maxlength="8" placeholder="Your name" size="5" required>
+                <input type="text" id="room" placeholder="Chat room" size="5" required>
+                <button id="join" type="submit">Join</button>
+            </form>
+    
+            <ul class="chat-display"></ul>
+    
+            <p class="user-list"></p>
+    
+            <p class="room-list"></p>
+    
+            <p class="activity"></p>
+    
+            <form class="form-msg" onsubmit="sendMessage(event)">
+                <input id="i" type="text" id="message" placeholder="Your message" required>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="inbox">
+                        <div class="messenger-list">
+                            <div class="search-bar">
+                                <input placeholder="Search Friend">
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <button class="btn btn-sm btn-blue" data-toggle="modal" data-target="#postView" onclick="openPopup()">New</button>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <ul class="message-list" style="max-height: 350px; overflow-y: auto;">
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-box">
+                            <div class="chat-header">
+                                <div class="header-icon">
+                                    <img src="images/logo.png">
+                                    <i class="fa fa-circle green"></i>
+                                </div>
+                                <div class="header-details">
+                                    <h5 id="name-room" class="user-icon">Get Set Ready Girls</h5>
+                                    <span class="header-summery font-12">Lady Warriors</span>
+                                </div>
+                            </div>
+                            <div class="chatter" style="max-height: 350px; overflow-y: auto;">
+                                
+                            </div>
+                            <div class="chat-footer">
+                                <div class="chat-input">
+                                    <textarea id="ip-message" rows="1" placeholder="Type your message here..."></textarea>
+                                    <ul class="chat-action">
+                                        <li><a><img src="images/svg/attachment.svg"/></a></li>
+                                        <li><a><img src="images/svg/upload.svg"/></a></li>
+                                        <li><a><img src="images/svg/smiling.svg"/></a></li>
+                                    </ul>
+                                    <button class="btn btn-blue btn-sm chat-btn" type="submit" onclick="sendMessage(event)"><img src="images/svg/fly-send.svg"/></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </main>
+    <div style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.7);" id="createRoomPopup">
+        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.3); width: 300px;">
+            <span style="position: absolute; top: 10px; right: 10px; cursor: pointer;" onclick="closePopup()">&times;</span>
+            <h2 style="text-align: center;">Create Chat Room</h2>
+            <form id="createRoomForm" style="display: block;" onsubmit="createRoom(event); closePopup(); ">
+                <div style="margin-left: 30px; margin-bottom: 15px;">
+                    <label for="roomName" style="display: block; margin-bottom: 5px;">Room Name:</label>
+                    <input type="text" id="roomName" name="roomName" required style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+                </div>
+                <div style="padding: 8px 15px;">
+                    <button type="submit" style="width: 100px; padding: 8px 15px; background-color: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;">Create</button>
+                    <button type="button" onclick="closePopup()" style="margin-left: 25px; width: 100px; padding: 8px 15px; background-color: #007bff; color: #fff; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </body>
-
+<script src="js/jquery-3.0.0.min.js"></script>
+<script src="js/bootstrap.js"></script>
+<script src="js/jquery.mCustomScrollbar.concat.min.js"></script>
+<script>
+    (function($){
+        $(window).on("load",function(){
+            $(".message-list, .chatter, .comment-section, .storyline").mCustomScrollbar({
+                theme:"dark-3"
+            });
+        });
+    })(jQuery);
+</script>
+<script>
+    function openPopup() {
+        document.getElementById('createRoomPopup').style.display = 'block';
+    }
+    
+    function closePopup() {
+        document.getElementById('createRoomPopup').style.display = 'none';
+    }
+    
+    document.getElementById('createRoomForm').addEventListener('submit', function(event) {
+        event.preventDefault();
+        const roomName = document.getElementById('roomName').value;
+        const roomPassword = document.getElementById('roomPassword').value;
+        
+        console.log(`Room Name: ${roomName}, Password: ${roomPassword}`);
+    
+        closePopup();
+    });
+    </script>
 </html>
