@@ -104,7 +104,7 @@ io.on('connection', socket => {
             for (let room of rooms) {
                 room.isJoined = (await checkJoinRoom(room.NameRoom, username)) !== undefined;
             }
-            socket.emit('roomList', {
+            io.emit('roomList', {
                 rooms: rooms
             });
             socket.emit("rsJoinRoom", {room: myRoom});
@@ -123,11 +123,13 @@ io.on('connection', socket => {
             // join room 
             socket.join(user.room);
             const checkJoinedRoom = await checkJoinRoom(nameRoom, username);
-            if(checkJoinedRoom === undefined) await joinRoom(nameRoom, username);
+            if(checkJoinedRoom === undefined) {
+                await joinRoom(nameRoom, username);
+                const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
+                await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
+            }
             const room = await getRoomByName(nameRoom);
             socket.emit("rsJoinRoom", {room: room});
-            const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
-            await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             const allMessInRoom = await getAllMessOfRoom(nameRoom);
             io.to(nameRoom).emit("messagesList", {messages: allMessInRoom});
         } catch (error) {
@@ -147,11 +149,15 @@ io.on('connection', socket => {
         }
     });
 
-    // Listen for activity 
-    socket.on('activity', (name) => {
-        const room = getUser(socket.id)?.room;
-        if (room) {
-            socket.broadcast.to(room).emit('activity', name);
+    socket.on('searchRoom', async ({ searchValue }) => {
+        try {
+            let rooms = await getAllRooms();
+            rooms = filterRoomByName(rooms, searchValue);
+            socket.emit('roomList', {
+                rooms: rooms
+            });
+        } catch (error) {
+            console.error('Error search room:', error);
         }
     });
 });
@@ -198,4 +204,12 @@ function getUsersInRoom(room) {
 
 function getAllActiveRooms() {
     return Array.from(new Set(UsersState.users.map(user => user.room)));
+}
+
+
+function filterRoomByName(rooms, searchValue){
+    var filteredRooms = rooms.filter(room => {
+        return room.NameRoom.toLowerCase().includes(searchValue.toLowerCase());
+    })
+    return filteredRooms;
 }

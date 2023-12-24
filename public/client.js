@@ -61,6 +61,7 @@ function selectRoom(element){
     socket.emit('selectRoom', {nameRoom: nameRoom, username: username});
     curNameRoomSelecting = nameRoom;
     if(curElementRoomSelecting) curElementRoomSelecting.className = "read";
+    else document.getElementById('non-select').style.display = "none";
     curElementRoomSelecting = element;
     curElementRoomSelecting.className = "active";
 }
@@ -69,6 +70,10 @@ function joinRoom(e) {
     if(e) e.preventDefault();
     document.getElementById('joinRoomForm').reset();
     socket.emit('joinRoom', {nameRoom: curNameRoomSelecting, username: username});
+}
+
+function searchRoom(searchValue){
+    socket.emit('searchRoom', {searchValue});
 }
 
 //#endregion

@@ -53,8 +53,7 @@ async function createRoom(nameRoom, password, title){
     await mssql.connect(config);
 
     // Thực hiện truy vấn đến bảng
-    const result = await mssql.query`INSERT INTO PhongChat (NameRoom, Password, Title) VALUES (${nameRoom}, ${password}, ${title})`;
-
+    const result = await mssql.query`INSERT INTO PhongChat (NameRoom, Password, Title) OUTPUT INSERTED.* VALUES (${nameRoom}, ${password}, ${title})`;
     return result.recordset[0];
   } catch (err) {
     console.error('Error:', err);
