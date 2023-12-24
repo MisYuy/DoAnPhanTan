@@ -5,7 +5,8 @@ import { fileURLToPath } from 'url';
 
 
 // Assuming that database.js is in the same directory as server.mjs
-import { loginMethod, checkJoinRoom, createRoom, joinRoom, getAllRooms, getRoomByName, insertMess, getAllMessOfRoom } from './database.js';
+import { loginMethod, checkJoinRoom, createRoom, joinRoom, getAllRooms, getRoomByName, insertMess, getAllMessOfRoom, 
+    checkAccount, registerMethod } from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,7 +68,7 @@ io.on('connection', socket => {
         try {
             const user = await loginMethod(username, password);
             const result = user !== undefined;
-            socket.emit("loginResult", {result, user});
+            socket.emit("loginResult", { result, user });
             let rooms = await getAllRooms();
             for (let room of rooms) {
                 room.isJoined = (await checkJoinRoom(room.NameRoom, username)) !== undefined;
@@ -77,7 +78,24 @@ io.on('connection', socket => {
             });
         } catch (error) {
             console.error('Error during login:', error);
-            socket.emit("loginResult", {result});
+            socket.emit("loginResult", { result });
+        }
+    });
+
+    socket.on('register', async ({ username, password, email }) => {
+        try {
+            const checkAcc = await checkAccount(username);
+            if (checkAcc) {
+                socket.emit("registerCheckAccountResult", { result: true });
+            }
+            else {
+                const regist = await registerMethod(username, password, email);
+                const result = regist !== undefined;
+                socket.emit("registerResult", { result });
+            }
+        } catch (error) {
+            console.error('Error during register:', error);
+            socket.emit("registerResult", { result });
         }
     });
 
@@ -85,15 +103,15 @@ io.on('connection', socket => {
         try {
             const result = await checkJoinRoom(nameRoom, username);
             const check = result !== undefined;
-            socket.emit("rsSelectRoom", {check});
+            socket.emit("rsSelectRoom", { check });
         } catch (error) {
             console.error('Error during login:', error);
-            socket.emit("rsSelectRoom", {check});
+            socket.emit("rsSelectRoom", { check });
         }
     });
 
 
-    socket.on('createRoom', async ({nameRoom, username, password, title}) => {
+    socket.on('createRoom', async ({ nameRoom, username, password, title }) => {
         try {
             const user = activateUser(socket.id, username, nameRoom);
             // join room 
@@ -107,31 +125,31 @@ io.on('connection', socket => {
             io.emit('roomList', {
                 rooms: rooms
             });
-            socket.emit("rsJoinRoom", {room: myRoom});
+            socket.emit("rsJoinRoom", { room: myRoom });
             const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
             await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             const allMessInRoom = await getAllMessOfRoom(nameRoom);
-            socket.emit("messagesList", {messages: allMessInRoom});
+            socket.emit("messagesList", { messages: allMessInRoom });
         } catch (error) {
             console.error('Error create room:', error);
         }
     });
 
-    socket.on('joinRoom', async ({nameRoom, username}) => {
+    socket.on('joinRoom', async ({ nameRoom, username }) => {
         try {
             const user = activateUser(socket.id, username, nameRoom);
             // join room 
             socket.join(user.room);
             const checkJoinedRoom = await checkJoinRoom(nameRoom, username);
-            if(checkJoinedRoom === undefined) {
+            if (checkJoinedRoom === undefined) {
                 await joinRoom(nameRoom, username);
                 const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
                 await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             }
             const room = await getRoomByName(nameRoom);
-            socket.emit("rsJoinRoom", {room: room});
+            socket.emit("rsJoinRoom", { room: room });
             const allMessInRoom = await getAllMessOfRoom(nameRoom);
-            io.to(nameRoom).emit("messagesList", {messages: allMessInRoom});
+            io.to(nameRoom).emit("messagesList", { messages: allMessInRoom });
         } catch (error) {
             console.error('Error create room:', error);
         }
@@ -143,7 +161,7 @@ io.on('connection', socket => {
             const mess = buildMsg(sender, text, TYPE_MESS.NORMAL);
             await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             const allMessInRoom = await getAllMessOfRoom(nameRoom);
-            io.to(nameRoom).emit("messagesList", {messages: allMessInRoom});
+            io.to(nameRoom).emit("messagesList", { messages: allMessInRoom });
         } catch (error) {
             console.error('Error send message:', error);
         }
@@ -207,7 +225,7 @@ function getAllActiveRooms() {
 }
 
 
-function filterRoomByName(rooms, searchValue){
+function filterRoomByName(rooms, searchValue) {
     var filteredRooms = rooms.filter(room => {
         return room.NameRoom.toLowerCase().includes(searchValue.toLowerCase());
     })

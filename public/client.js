@@ -33,12 +33,37 @@ function login(e) {
     socket.emit('login', { username, password });
 }
 
-function createRoom(e){
+function register(e) {
+    e.preventDefault();
+    const username = document.getElementById('userRegister').value;
+    const password = document.getElementById('passRegister').value;
+    const repass = document.getElementById('repassRegister').value;
+    const email = document.getElementById('emailRegister').value;
+
+    if (username && password && repass && email && password === repass) {
+        // Send login information to the server
+        socket.emit('register', { username, password, email });
+    }
+    else {
+        const message = document.getElementById('registerResult');
+        let mess = '';
+        if (!username || !password || !repass || !email) {
+            mess = "NHẬP ĐẦY ĐỦ THÔNG TIN!";
+        }
+        else if (password !== repass) {
+            mess = "XÁC NHẬN LẠI MẬT KHẨU!";
+        }
+        message.textContent = mess;
+        message.style.color = 'red';
+    }
+}
+
+function createRoom(e) {
     e.preventDefault();
     const nameRoom = document.getElementById('roomName').value;
     const password = document.getElementById('roomPassword').value;
     const title = document.getElementById('roomTitle').value;
-    socket.emit('createRoom', {nameRoom, username: username, password, title: title});
+    socket.emit('createRoom', { nameRoom, username: username, password, title: title });
     document.getElementById('createRoomForm').reset();
 }
 
@@ -56,40 +81,58 @@ function sendMessage(e) {
     msgInput.focus();
 }
 
-function selectRoom(element){
+function selectRoom(element) {
     const nameRoom = element.getAttribute('name-room');
-    socket.emit('selectRoom', {nameRoom: nameRoom, username: username});
+    socket.emit('selectRoom', { nameRoom: nameRoom, username: username });
     curNameRoomSelecting = nameRoom;
-    if(curElementRoomSelecting) curElementRoomSelecting.className = "read";
+    if (curElementRoomSelecting) curElementRoomSelecting.className = "read";
     else document.getElementById('non-select').style.display = "none";
     curElementRoomSelecting = element;
     curElementRoomSelecting.className = "active";
 }
 
 function joinRoom(e) {
-    if(e) e.preventDefault();
+    if (e) e.preventDefault();
     document.getElementById('joinRoomForm').reset();
-    socket.emit('joinRoom', {nameRoom: curNameRoomSelecting, username: username});
+    socket.emit('joinRoom', { nameRoom: curNameRoomSelecting, username: username });
 }
 
-function searchRoom(searchValue){
-    socket.emit('searchRoom', {searchValue});
+function searchRoom(searchValue) {
+    socket.emit('searchRoom', { searchValue });
 }
 
 //#endregion
 
 //#region ---------- RESPONSE FROM SERVER ----------
 
-socket.on("loginResult", ({result, user}) => {
-    if(result === true){
+socket.on("loginResult", ({ result, user }) => {
+    if (result === true) {
         username = user.Username;
         document.querySelector('.login-wrap').style.display = "none";
         document.querySelector('main').style.display = "flex";
         document.querySelector('.Hide').style.display = "none";
         document.getElementById('customStyle').href = "style.css";
     }
-    else{
+    else {
         document.querySelector('#loginResult').innerHTML = `<p style="text-align: center; color: red;">Tài khoản hoặc mật khẩu không chính xác!!!</p>`;
+    }
+});
+
+socket.on("registerCheckAccountResult", ({result}) => {
+    console.log(result);
+    if (result === true) {
+        const message = document.getElementById('registerResult');
+        message.textContent = 'USER ĐÃ TỒN TẠI!';
+        message.style.color = 'red';
+    }
+});
+
+socket.on("registerResult", ({result}) => {
+    console.log(result);
+    if (result === true) {
+        const message = document.getElementById('registerResult');
+        message.textContent = 'ĐĂNG KÝ THÀNH CÔNG!';
+        message.style.color = 'green';
     }
 });
 
@@ -103,10 +146,10 @@ socket.on('roomList', ({ rooms }) => {
 
 
 socket.on('rsSelectRoom', ({ check }) => {
-    if(check !== true){
+    if (check !== true) {
         openJoinRoomPopup();
     }
-    else{
+    else {
         joinRoom(null);
     }
 });
@@ -159,17 +202,17 @@ function showRooms(rooms) {
     }
 }
 
-function openRoom(room){
+function openRoom(room) {
     nameRoom.textContent = room.NameRoom;
     document.querySelector('#title-room').textContent = room.Title;
 }
 
-function showMess(messages){
+function showMess(messages) {
     chatter.innerHTML = "";
-    if(messages){
+    if (messages) {
         messages.forEach(mess => {
-            if(mess.Sender === "Admin"){
-                const color = mess.Type === "In" ? "green" : "red"; 
+            if (mess.Sender === "Admin") {
+                const color = mess.Type === "In" ? "green" : "red";
                 chatter.innerHTML += `<div class="chat-wrapper middle" style="margin-left: auto; margin-right: auto; width: 50%; color: ${color}; margin-top: 15px; margin-bottom: 15px;">
                 <div class="chatter-title" style="text-align: center;">
                     ${mess.Time}
@@ -179,7 +222,7 @@ function showMess(messages){
                 </div>
             </div>`;
             }
-            else if(mess.Sender !== username){
+            else if (mess.Sender !== username) {
                 chatter.innerHTML += `<div class="chat-wrapper left" style="margin-top: 15px; margin-bottom: 15px;">
                 <div class="chatter-title">
                 ${mess.Sender}
@@ -192,7 +235,7 @@ function showMess(messages){
                 </div>
             </div>`;
             }
-            else{
+            else {
                 chatter.innerHTML += `<div class="chat-wrapper right" style="margin-top: 15px; margin-bottom: 15px;">
                 <div class="chatter-title">
                     ${mess.Sender}

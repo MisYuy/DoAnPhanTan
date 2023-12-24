@@ -30,6 +30,41 @@ async function loginMethod(username, password) {
   }
 }
 
+async function checkAccount(username) {
+  try {
+    await mssql.connect(config);
+
+    const result = await mssql.query`SELECT * FROM TaiKhoan WHERE Username = ${username}`;
+
+    return result.recordset[0];
+  } catch (error) {
+    console.error('Error:', err);
+  } finally {
+    await mssql.close();
+  }
+}
+
+async function registerMethod(username, password, email) {
+  
+  try {
+    if (username && password && email) {
+      console.log("Had data");
+    }
+    else {
+      console.log("No data");
+    }
+    await mssql.connect(config);
+
+    const result = await mssql.query`INSERT INTO TaiKhoan (Username, Password, Email) OUTPUT inserted.* VALUES (${username}, ${password}, ${email})`;
+
+    return result.recordset[0];
+  } catch (error) {
+    console.error('Error:', error);
+  } finally {
+    await mssql.close();
+  }
+}
+
 async function checkJoinRoom(nameRoom, username){
   try {
     // Tạo đối tượng kết nối
@@ -157,5 +192,7 @@ export {
     getRoomByName,
     insertMess,
     getAllMessOfRoom,
+    checkAccount,
+    registerMethod,
 }
   

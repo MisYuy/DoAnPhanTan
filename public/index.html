@@ -51,29 +51,32 @@
                     </form>
                 </div>
                 <div class="sign-up-htm">
-                    <div class="group">
-                        <label style="text-align: left;" for="user" class="label">Username</label>
-                        <input id="user" type="text" class="input">
-                    </div>
-                    <div class="group">
-                        <label style="text-align: left;" for="pass" class="label">Password</label>
-                        <input id="pass" type="password" class="input" data-type="password">
-                    </div>
-                    <div class="group">
-                        <label style="text-align: left;" for="pass" class="label">Repeat Password</label>
-                        <input id="pass" type="password" class="input" data-type="password">
-                    </div>
-                    <div class="group">
-                        <label style="text-align: left;" for="pass" class="label">Email Address</label>
-                        <input id="pass" type="text" class="input">
-                    </div>
-                    <div class="group">
-                        <input type="submit" class="button" value="Sign Up">
-                    </div>
-                    <div class="hr"></div>
-                    <div class="foot-lnk">
-                        <label for="tab-1">Already Member?</a>
-                    </div>
+                    <form class="register-form" onsubmit="register(event)">
+                        <div class="group">
+                            <label style="text-align: left;" for="username" class="label">Username</label>
+                            <input id="userRegister" type="text" class="input">
+                        </div>
+                        <div class="group">
+                            <label style="text-align: left;" for="pass" class="label">Password</label>
+                            <input id="passRegister" type="password" class="input" data-type="password">
+                        </div>
+                        <div class="group">
+                            <label style="text-align: left;" for="repass" class="label">Repeat Password</label>
+                            <input id="repassRegister" type="password" class="input" data-type="password">
+                        </div>
+                        <div class="group">
+                            <label style="text-align: left;" for="email" class="label">Email Address</label>
+                            <input id="emailRegister" type="text" class="input">
+                        </div>
+                        <div id="registerResult" class="registerResult" style="text-align: center;"></div>
+                        <div class="group">
+                            <input type="submit" class="button" value="Sign Up">
+                        </div>
+                        <div class="hr"></div>
+                        <div class="foot-lnk">
+                            <label for="tab-1">Already Member?</a>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

@@ -112,7 +112,8 @@ SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[ThamGia](
 	[NameRoom] [nvarchar](50) NOT NULL,
-	[Username] [nvarchar](50) NOT NULL
+	[Username] [nvarchar](50) NOT NULL,
+	[Email] [nvarchar](200) NOT NULL
 ) ON [PRIMARY]
 GO
 /****** Object:  Table [dbo].[TinNhan]    Script Date: 12/23/2023 10:52:16 PM ******/
