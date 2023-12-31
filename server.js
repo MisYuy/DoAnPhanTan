@@ -6,18 +6,8 @@ import { fileURLToPath } from 'url';
 
 // Assuming that database.js is in the same directory as server.mjs
 import {
-    loginMethod,
-    checkJoinRoom,
-    createRoom,
-    joinRoom,
-    getAllRooms,
-    getRoomByName,
-    insertMess,
-    deleteMessage,
-    findMessageById,
-    getAllMessOfRoom,
-    checkAccount,
-    registerMethod
+    loginMethod, checkJoinRoom, createRoom, joinRoom, getAllRooms, getRoomByName, insertMess, getAllMessOfRoom,
+    checkAccount, registerMethod, leaveRoom
 } from './database.js';
 
 const __filename = fileURLToPath(
@@ -147,6 +137,13 @@ io.on('connection', socket => {
                 const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
                 await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             }
+            let rooms = await getAllRooms();
+            for (let r of rooms) {
+                r.isJoined = (await checkJoinRoom(r.NameRoom, username)) !== undefined;
+            }
+            socket.emit('roomList', {
+                rooms: rooms
+            });
             const room = await getRoomByName(nameRoom);
             socket.emit("rsJoinRoom", { room: room });
             const allMessInRoom = await getAllMessOfRoom(nameRoom);
@@ -209,7 +206,29 @@ io.on('connection', socket => {
         }
     });
 
-
+    socket.on('leaveRoom', async ({ username, roomName }) => {
+        try {
+            let leave = await leaveRoom(username, roomName);
+            let result = leave !== undefined
+            if (result) {
+                socket.leave(roomName);
+                let rooms = await getAllRooms();
+                for (let room of rooms) {
+                    room.isJoined = (await checkJoinRoom(room.NameRoom, username)) !== undefined;
+                }
+                socket.emit('roomList', {
+                    rooms: rooms
+                });
+                const mess = buildMsg(ADMIN, `${username} vừa rời khỏi cuộc trò chuyện.`, TYPE_MESS.OUT);
+                await insertMess(roomName, mess.name, mess.text, mess.time, mess.type);
+                const allMessInRoom = await getAllMessOfRoom(roomName);
+                io.to(roomName).emit("messagesList", { messages: allMessInRoom });
+                socket.emit('leaveResult', { roomName, result });
+            }
+        } catch (error) {
+            console.error('Error leave room:', error);
+        }
+    });
 });
 
 function buildMsg(name, text, type) {
