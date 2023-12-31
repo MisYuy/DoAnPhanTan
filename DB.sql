@@ -122,6 +122,7 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 CREATE TABLE [dbo].[TinNhan](
+	[Id] [nvarchar](50) NOT NULL,
 	[NameRoom] [nvarchar](50) NOT NULL,
 	[Sender] [nvarchar](50) NOT NULL,
 	[ContentChat] [nvarchar](1000) NOT NULL,
