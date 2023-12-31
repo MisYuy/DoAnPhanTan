@@ -17,9 +17,11 @@ const ADMIN = "Admin";
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-const expressServer = app.listen(PORT, () => {
-    console.log(`listening on port ${PORT}`);
+const IP = '192.168.1.6'; // Replace with your actual IPv4 address
+const expressServer = app.listen(PORT, IP, () => {
+    console.log(`Server running on http://${IP}:${PORT}`);
 });
+
 
 // state 
 const UsersState = {
@@ -37,7 +39,7 @@ const TYPE_MESS = {
 
 const io = new Server(expressServer, {
     cors: {
-        origin: process.env.NODE_ENV === "production" ? false : ["http://localhost:5500", "http://127.0.0.1:5500"]
+        origin: process.env.NODE_ENV === "production" ? false : ["http://localhost:5500", "http://127.0.0.1:5500", "http://192.168.0.107:3500"]
     }
 })
 
@@ -48,19 +50,6 @@ io.on('connection', socket => {
     socket.on('disconnect', () => {
         const user = getUser(socket.id);
         userLeavesApp(socket.id);
-
-        if (user) {
-            io.to(user.room).emit('message', buildMsg(ADMIN, `${user.name} has left the room`));
-
-            io.to(user.room).emit('userList', {
-                users: getUsersInRoom(user.room)
-            });
-
-            io.emit('roomList', {
-                rooms: getAllActiveRooms()
-            });
-        }
-
         console.log(`User ${socket.id} disconnected`);
     });
 

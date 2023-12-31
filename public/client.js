@@ -1,4 +1,4 @@
-const socket = io('http://localhost:3500');
+const socket = io('http://192.168.1.6:3500');
 
 const loginResult = document.querySelector('.loginResult');
 
