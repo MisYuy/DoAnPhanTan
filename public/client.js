@@ -243,7 +243,7 @@ function showRooms(rooms) {
 function openRoom(room) {
     nameRoom.textContent = room.NameRoom;
     document.querySelector('#title-room').textContent = room.Title;
-    
+    document.getElementById('non-select').style.display = "none";
     const existingReplyBlock = document.getElementById('replyBlock');
 
     // Nếu đã có, xóa replyBlock cũ
