@@ -121,3 +121,93 @@ button {
 .activity {
     font-style: italic;
 }
+
+.message-content {
+    display: flex;
+    align-items: center;
+}
+
+.message-icons button {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.chatter-message {
+    flex-grow: 1;
+    /* Duyệt toàn bộ không gian còn lại */
+}
+
+.ellipsis {
+    font-weight: bold;
+    margin: 0;
+    /* Đảm bảo không có margin ở đây */
+    font-size: 24px;
+}
+
+.message-icons button {
+    display: none;
+}
+
+.chat-wrapper.right:hover .message-icons button {
+    display: block;
+}
+
+.chat-wrapper.left:hover .message-icons button {
+    display: block;
+}
+
+.message-icons {
+    position: relative;
+}
+
+.menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    display: none;
+    width: 100px;
+}
+
+.menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.menu li {
+    padding: 10px;
+    cursor: pointer;
+}
+
+.menu li:hover {
+    background-color: #f0f0f0;
+}
+
+.reply-block {
+    position: relative;
+}
+
+#deleteReplyBlock {
+    position: absolute;
+    top: 15px;
+    right: 0;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.reply-message {
+    background-color: #f2f2f2;
+    /* Màu xám nhạt */
+    padding: 10px;
+    /* Để tạo khoảng trắng xung quanh nội dung */
+    border-radius: 5px;
+    /* Để làm cho góc tròn */
+    opacity: 0.5;
+}

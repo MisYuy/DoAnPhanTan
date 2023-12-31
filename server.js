@@ -5,10 +5,23 @@ import { fileURLToPath } from 'url';
 
 
 // Assuming that database.js is in the same directory as server.mjs
-import { loginMethod, checkJoinRoom, createRoom, joinRoom, getAllRooms, getRoomByName, insertMess, getAllMessOfRoom, 
-    checkAccount, registerMethod } from './database.js';
+import {
+    loginMethod,
+    checkJoinRoom,
+    createRoom,
+    joinRoom,
+    getAllRooms,
+    getRoomByName,
+    insertMess,
+    deleteMessage,
+    findMessageById,
+    getAllMessOfRoom,
+    checkAccount,
+    registerMethod
+} from './database.js';
 
-const __filename = fileURLToPath(import.meta.url);
+const __filename = fileURLToPath(
+    import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3500;
@@ -26,7 +39,7 @@ const expressServer = app.listen(PORT, IP, () => {
 // state 
 const UsersState = {
     users: [],
-    setUsers: function (newUsersArray) {
+    setUsers: function(newUsersArray) {
         this.users = newUsersArray;
     }
 };
@@ -53,7 +66,7 @@ io.on('connection', socket => {
         console.log(`User ${socket.id} disconnected`);
     });
 
-    socket.on('login', async ({ username, password }) => {
+    socket.on('login', async({ username, password }) => {
         try {
             const user = await loginMethod(username, password);
             const result = user !== undefined;
@@ -71,13 +84,12 @@ io.on('connection', socket => {
         }
     });
 
-    socket.on('register', async ({ username, password, email }) => {
+    socket.on('register', async({ username, password, email }) => {
         try {
             const checkAcc = await checkAccount(username);
             if (checkAcc) {
                 socket.emit("registerCheckAccountResult", { result: true });
-            }
-            else {
+            } else {
                 const regist = await registerMethod(username, password, email);
                 const result = regist !== undefined;
                 socket.emit("registerResult", { result });
@@ -88,7 +100,7 @@ io.on('connection', socket => {
         }
     });
 
-    socket.on('selectRoom', async ({ nameRoom, username }) => {
+    socket.on('selectRoom', async({ nameRoom, username }) => {
         try {
             const result = await checkJoinRoom(nameRoom, username);
             const check = result !== undefined;
@@ -100,7 +112,7 @@ io.on('connection', socket => {
     });
 
 
-    socket.on('createRoom', async ({ nameRoom, username, password, title }) => {
+    socket.on('createRoom', async({ nameRoom, username, password, title }) => {
         try {
             const user = activateUser(socket.id, username, nameRoom);
             // join room 
@@ -124,7 +136,7 @@ io.on('connection', socket => {
         }
     });
 
-    socket.on('joinRoom', async ({ nameRoom, username }) => {
+    socket.on('joinRoom', async({ nameRoom, username }) => {
         try {
             const user = activateUser(socket.id, username, nameRoom);
             // join room 
@@ -145,7 +157,7 @@ io.on('connection', socket => {
     });
 
     // Listening for a message event 
-    socket.on('message', async ({ sender, text, nameRoom }) => {
+    socket.on('message', async({ sender, text, nameRoom }) => {
         try {
             const mess = buildMsg(sender, text, TYPE_MESS.NORMAL);
             await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
@@ -156,7 +168,36 @@ io.on('connection', socket => {
         }
     });
 
-    socket.on('searchRoom', async ({ searchValue }) => {
+    socket.on('reply', async({ sender, text, nameRoom, type }) => {
+        try {
+            const mess = buildMsg(sender, text, type);
+            await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
+            const allMessInRoom = await getAllMessOfRoom(nameRoom);
+            io.to(nameRoom).emit("messagesList", { messages: allMessInRoom });
+        } catch (error) {
+            console.error('Error send message:', error);
+        }
+    });
+
+    socket.on('deleteMessage', async({ messageId, nameRoom }) => {
+        try {
+            // Thực hiện hàm xóa tin nhắn dựa trên ID
+            const rowsAffected = await deleteMessage(messageId);
+
+            if (rowsAffected > 0) {
+                console.log(`Đã xóa tin nhắn có ID: ${messageId}`);
+                // Thông báo cho tất cả các clients trong phòng rằng tin nhắn đã bị xóa
+                const allMessInRoom = await getAllMessOfRoom(nameRoom);
+                io.to(nameRoom).emit('messagesList', { messages: allMessInRoom });
+            } else {
+                console.log(`Không có tin nhắn nào được xóa với ID: ${messageId}`);
+            }
+        } catch (error) {
+            console.error('Error deleting message:', error);
+        }
+    });
+
+    socket.on('searchRoom', async({ searchValue }) => {
         try {
             let rooms = await getAllRooms();
             rooms = filterRoomByName(rooms, searchValue);
@@ -167,6 +208,8 @@ io.on('connection', socket => {
             console.error('Error search room:', error);
         }
     });
+
+
 });
 
 function buildMsg(name, text, type) {
