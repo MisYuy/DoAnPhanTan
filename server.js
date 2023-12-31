@@ -5,8 +5,10 @@ import { fileURLToPath } from 'url';
 
 
 // Assuming that database.js is in the same directory as server.mjs
-import { loginMethod, checkJoinRoom, createRoom, joinRoom, getAllRooms, getRoomByName, insertMess, getAllMessOfRoom, 
-    checkAccount, registerMethod } from './database.js';
+import {
+    loginMethod, checkJoinRoom, createRoom, joinRoom, getAllRooms, getRoomByName, insertMess, getAllMessOfRoom,
+    checkAccount, registerMethod, leaveRoom
+} from './database.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -17,7 +19,7 @@ const ADMIN = "Admin";
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-const IP = '192.168.1.6'; // Replace with your actual IPv4 address
+const IP = '127.0.0.1'; // Replace with your actual IPv4 address
 const expressServer = app.listen(PORT, IP, () => {
     console.log(`Server running on http://${IP}:${PORT}`);
 });
@@ -135,6 +137,13 @@ io.on('connection', socket => {
                 const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
                 await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             }
+            let rooms = await getAllRooms();
+            for (let r of rooms) {
+                r.isJoined = (await checkJoinRoom(r.NameRoom, username)) !== undefined;
+            }
+            socket.emit('roomList', {
+                rooms: rooms
+            });
             const room = await getRoomByName(nameRoom);
             socket.emit("rsJoinRoom", { room: room });
             const allMessInRoom = await getAllMessOfRoom(nameRoom);
@@ -165,6 +174,30 @@ io.on('connection', socket => {
             });
         } catch (error) {
             console.error('Error search room:', error);
+        }
+    });
+
+    socket.on('leaveRoom', async ({ username, roomName }) => {
+        try {
+            let leave = await leaveRoom(username, roomName);
+            let result = leave !== undefined
+            if (result) {
+                socket.leave(roomName);
+                let rooms = await getAllRooms();
+                for (let room of rooms) {
+                    room.isJoined = (await checkJoinRoom(room.NameRoom, username)) !== undefined;
+                }
+                socket.emit('roomList', {
+                    rooms: rooms
+                });
+                const mess = buildMsg(ADMIN, `${username} vừa rời khỏi cuộc trò chuyện.`, TYPE_MESS.OUT);
+                await insertMess(roomName, mess.name, mess.text, mess.time, mess.type);
+                const allMessInRoom = await getAllMessOfRoom(roomName);
+                io.to(roomName).emit("messagesList", { messages: allMessInRoom });
+                socket.emit('leaveResult', { roomName, result });
+            }
+        } catch (error) {
+            console.error('Error leave room:', error);
         }
     });
 });

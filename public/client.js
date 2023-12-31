@@ -1,4 +1,4 @@
-const socket = io('http://192.168.1.6:3500');
+const socket = io('http://localhost:3500');
 
 const loginResult = document.querySelector('.loginResult');
 
@@ -101,6 +101,11 @@ function searchRoom(searchValue) {
     socket.emit('searchRoom', { searchValue });
 }
 
+function leaveRoom(e) {
+    e.preventDefault();
+    socket.emit('leaveRoom', {username: username, roomName: curNameRoomSelecting});
+}
+
 //#endregion
 
 //#region ---------- RESPONSE FROM SERVER ----------
@@ -148,9 +153,11 @@ socket.on('roomList', ({ rooms }) => {
 socket.on('rsSelectRoom', ({ check }) => {
     if (check !== true) {
         openJoinRoomPopup();
+        document.getElementById('non-select').style.display = "block";
     }
     else {
         joinRoom(null);
+        document.getElementById('non-select').style.display = "none";
     }
 });
 
@@ -161,6 +168,17 @@ socket.on('rsJoinRoom', ({ room }) => {
 
 socket.on('messagesList', ({ messages }) => {
     showMess(messages);
+});
+
+socket.on('unblockRoom', () => {
+    document.getElementById('non-select').style.display = "block";
+});
+
+socket.on('leaveResult', ({roomName, result}) => {
+    if (result && curElementRoomSelecting) {
+        chatter.innerHTML = "";
+        document.getElementById('non-select').style.display = "block";
+    }
 });
 
 //#endregion 
@@ -205,6 +223,7 @@ function showRooms(rooms) {
 function openRoom(room) {
     nameRoom.textContent = room.NameRoom;
     document.querySelector('#title-room').textContent = room.Title;
+    document.getElementById('non-select').style.display = "none";
 }
 
 function showMess(messages) {

@@ -182,6 +182,21 @@ async function getAllMessOfRoom(nameRoom){
   }
 }
 
+async function leaveRoom(username, roomName){
+  try {
+    // Tạo đối tượng kết nối
+    await mssql.connect(config);
+
+    // Thực hiện truy vấn đến bảng
+    const result = await mssql.query`DELETE FROM ThamGia OUTPUT deleted .* WHERE Username = ${username} AND NameRoom = ${roomName}`;
+    return result.recordset[0];
+  } catch (err) {
+    console.error('Error:', err);
+  } finally {
+    await mssql.close();
+  }
+}
+
 // Export the loginMethod function for use in another script
 export {
     loginMethod,
@@ -194,5 +209,6 @@ export {
     getAllMessOfRoom,
     checkAccount,
     registerMethod,
+    leaveRoom,
 }
   
