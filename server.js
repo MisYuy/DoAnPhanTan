@@ -30,7 +30,7 @@ const ADMIN = "Admin";
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-const IP = '192.168.1.6'; // Replace with your actual IPv4 address
+const IP = '127.0.0.1'; // Replace with your actual IPv4 address
 const expressServer = app.listen(PORT, IP, () => {
     console.log(`Server running on http://${IP}:${PORT}`);
 });
