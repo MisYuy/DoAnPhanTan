@@ -137,13 +137,13 @@ io.on('connection', socket => {
                 const mess = buildMsg(ADMIN, `${username} vừa tham gia vào cuộc trò chuyện.`, TYPE_MESS.IN);
                 await insertMess(nameRoom, mess.name, mess.text, mess.time, mess.type);
             }
-            let rooms = await getAllRooms();
-            for (let r of rooms) {
-                r.isJoined = (await checkJoinRoom(r.NameRoom, username)) !== undefined;
-            }
-            socket.emit('roomList', {
-                rooms: rooms
-            });
+            // let rooms = await getAllRooms();
+            // for (let r of rooms) {
+            //     r.isJoined = (await checkJoinRoom(r.NameRoom, username)) !== undefined;
+            // }
+            // socket.emit('roomList', {
+            //     rooms: rooms
+            // });
             const room = await getRoomByName(nameRoom);
             socket.emit("rsJoinRoom", { room: room });
             const allMessInRoom = await getAllMessOfRoom(nameRoom);

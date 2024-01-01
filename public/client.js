@@ -172,12 +172,12 @@ socket.on('roomList', ({ rooms }) => {
 
 socket.on('rsSelectRoom', ({ check }) => {
     if (check !== true) {
-        openJoinRoomPopup();
         document.getElementById('non-select').style.display = "block";
+        openJoinRoomPopup();
     }
     else {
-        joinRoom(null);
         document.getElementById('non-select').style.display = "none";
+        joinRoom(null);
     }
 });
 
